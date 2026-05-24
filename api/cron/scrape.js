@@ -5,10 +5,20 @@ export const config = {
 }
 
 function authorizeCron(req) {
-  const secret = process.env.CRON_SECRET
+  const secret = process.env.CRON_SECRET?.trim()
   if (!secret) return true
+
   const auth = req.headers.authorization || req.headers.Authorization || ''
-  return auth === `Bearer ${secret}`
+  if (auth === `Bearer ${secret}`) return true
+
+  const headerSecret = req.headers['x-cron-secret']
+  if (headerSecret === secret) return true
+
+  // Tarayıcıdan tek seferlik test: ?secret=... (cron-job.org için header kullan)
+  const q = req.query?.secret
+  if (typeof q === 'string' && q === secret) return true
+
+  return false
 }
 
 export default async function handler(req, res) {
