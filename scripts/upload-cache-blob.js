@@ -22,8 +22,10 @@ if (!fs.existsSync(cacheFile)) {
 const raw = JSON.parse(fs.readFileSync(cacheFile, 'utf8'))
 const { put } = await import('@vercel/blob')
 
+const access = process.env.BLOB_ACCESS === 'public' ? 'public' : 'private'
+
 await put('drops-cache.json', JSON.stringify(raw), {
-  access: 'public',
+  access,
   addRandomSuffix: false,
   allowOverwrite: true,
   contentType: 'application/json',

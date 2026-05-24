@@ -7,6 +7,7 @@ export default async function handler(_req, res) {
       ok: true,
       vercel: Boolean(process.env.VERCEL),
       blob: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
+      blobAccess: process.env.BLOB_ACCESS || 'private',
       cronSecret: Boolean(process.env.CRON_SECRET),
       cached: drops.length,
       updatedAt,

@@ -6,18 +6,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const CACHE_FILE = path.join(__dirname, 'drops-cache.json')
 const BLOB_PATHNAME = 'drops-cache.json'
 
+/** Vercel private store veya public store */
+const BLOB_ACCESS = process.env.BLOB_ACCESS === 'public' ? 'public' : 'private'
+
 export { mergeDrops, dedupeDrops } from './dropUtils.js'
 
 async function loadFromBlob() {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return null
   try {
-    const { list, get } = await import('@vercel/blob')
-    const { blobs } = await list({ prefix: BLOB_PATHNAME, limit: 1 })
-    const hit = blobs.find((b) => b.pathname === BLOB_PATHNAME) ?? blobs[0]
-    if (!hit?.url) return null
-    const res = await fetch(hit.url)
-    if (!res.ok) return null
-    const raw = await res.json()
+    const { get } = await import('@vercel/blob')
+    const result = await get(BLOB_PATHNAME, { access: BLOB_ACCESS })
+    if (!result || result.statusCode !== 200 || !result.stream) return null
+    const text = await new Response(result.stream).text()
+    const raw = JSON.parse(text)
     return { drops: raw.drops ?? [], updatedAt: raw.updatedAt ?? null }
   } catch {
     return null
@@ -26,14 +27,19 @@ async function loadFromBlob() {
 
 async function saveToBlob(payload) {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return false
-  const { put } = await import('@vercel/blob')
-  await put(BLOB_PATHNAME, JSON.stringify(payload), {
-    access: 'public',
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    contentType: 'application/json',
-  })
-  return true
+  try {
+    const { put } = await import('@vercel/blob')
+    await put(BLOB_PATHNAME, JSON.stringify(payload), {
+      access: BLOB_ACCESS,
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      contentType: 'application/json',
+    })
+    return true
+  } catch (e) {
+    console.error('Blob save failed:', e.message)
+    return false
+  }
 }
 
 export async function loadCache() {
