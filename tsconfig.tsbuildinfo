@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/dropcard.tsx","./src/components/dropfilters.tsx","./src/components/droplist.tsx","./src/components/topplayers.tsx","./src/data/sampledrops.ts","./src/hooks/usedropfeed.ts","./src/lib/itemdegree.ts","./src/lib/itemformat.ts","./src/lib/parsedrops.ts","./src/types/drop.ts"],"version":"5.9.3"}

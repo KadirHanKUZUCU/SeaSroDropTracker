@@ -1,0 +1,36 @@
+{
+  "name": "sro-drop-tracker",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "server": "node server/index.js",
+    "stop": "node scripts/stop-servers.js",
+    "start": "node scripts/start-all.js",
+    "start:ps": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-all.ps1",
+    "backfill": "node scripts/backfill-drops.js",
+    "import-html": "node scripts/import-html.js server/rank-items-full.html --replace"
+  },
+  "dependencies": {
+    "@vercel/blob": "^0.27.3",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "sonner": "^1.7.4"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}
