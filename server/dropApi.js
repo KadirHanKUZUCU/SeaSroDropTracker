@@ -1,5 +1,7 @@
-import { backfillAll, fetchAllSources, itemDetailUrl } from './fetchDrops.js'
+import { backfillAll, fetchAllSources, fetchQuickLive, itemDetailUrl } from './fetchDrops.js'
 import { loadCache, mergeDrops, saveCache } from './dropStore.js'
+
+const IS_VERCEL = Boolean(process.env.VERCEL)
 
 export function withItemUrls(drops) {
   return drops.map((d) => ({
@@ -8,11 +10,32 @@ export function withItemUrls(drops) {
   }))
 }
 
-/** Canlı site + önbellek birleştir */
+/** Vercel: sadece Blob önbellek (timeout yok). Yerel: canlı + önbellek. */
 export async function getDropsResponse() {
+  const { drops: cached, updatedAt: cacheUpdatedAt } = await loadCache()
+
+  if (IS_VERCEL) {
+    if (cached.length === 0) {
+      return {
+        drops: [],
+        fetchedAt: new Date().toISOString(),
+        totalCount: 0,
+        emptyCache: true,
+        hint:
+          'Önbellek boş. Vercel Blob bağlayıp Redeploy edin, ardından /api/cron/scrape veya cron-job.org ile tarama yapın.',
+      }
+    }
+    return {
+      drops: withItemUrls(cached),
+      fetchedAt: new Date().toISOString(),
+      cacheUpdatedAt,
+      totalCount: cached.length,
+      fromCache: true,
+    }
+  }
+
   try {
     const live = await fetchAllSources(80)
-    const { drops: cached } = await loadCache()
     const merged = mergeDrops(cached, live)
     const updatedAt = await saveCache(merged)
     return {
@@ -23,7 +46,6 @@ export async function getDropsResponse() {
       totalCount: merged.length,
     }
   } catch (e) {
-    const { drops: cached } = await loadCache()
     if (cached.length > 0) {
       return {
         drops: withItemUrls(cached),
@@ -37,11 +59,11 @@ export async function getDropsResponse() {
   }
 }
 
-/** Cron: sadece tara ve önbelleğe yaz (hafif) */
+/** Cron / dış tetikleyici: hızlı tarama (~2 sayfa), Blob'a yazar */
 export async function runScrapeCron() {
   const { drops: cached } = await loadCache()
   const before = cached.length
-  const live = await fetchAllSources(80)
+  const live = await fetchQuickLive()
   const merged = mergeDrops(cached, live)
   const updatedAt = await saveCache(merged)
   return {
@@ -50,13 +72,14 @@ export async function runScrapeCron() {
     totalCount: merged.length,
     added: merged.length - before,
     updatedAt,
+    blob: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
   }
 }
 
 export async function runBackfill(maxPages = 200) {
   const { drops: cached } = await loadCache()
   const before = cached.length
-  const scraped = await backfillAll(maxPages)
+  const scraped = await backfillAll(IS_VERCEL ? 3 : maxPages)
   const merged = mergeDrops(cached, scraped)
   await saveCache(merged)
   return {

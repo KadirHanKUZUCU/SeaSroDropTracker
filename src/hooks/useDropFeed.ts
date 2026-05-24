@@ -67,10 +67,12 @@ function normalizeDrop(raw: Partial<DropItem> & { itemName: string }): DropItem 
   return enriched
 }
 
-async function fetchDrops(): Promise<DropsResponse> {
+async function fetchDrops(): Promise<DropsResponse & { hint?: string; emptyCache?: boolean }> {
   const res = await fetch(API_DROPS, { cache: 'no-store' })
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  const data = (await res.json()) as DropsResponse
+  const data = (await res.json()) as DropsResponse & { hint?: string; emptyCache?: boolean; error?: string }
+  if (!res.ok) {
+    throw new Error(data.error || `HTTP ${res.status}`)
+  }
   const drops = dedupeClient((data.drops ?? []).map((d) => normalizeDrop(d)))
   return { ...data, drops, totalCount: drops.length }
 }
@@ -98,9 +100,17 @@ export function useDropFeed() {
     setError(null)
     try {
       const data = await fetchDrops()
-      const { drops: fresh, fetchedAt } = data
+      const { drops: fresh, fetchedAt, hint, emptyCache } = data
       setLastFetched(fetchedAt)
       setUseSample(false)
+
+      if (emptyCache && fresh.length === 0) {
+        setDrops([])
+        setError(hint ?? 'Önbellek boş — cron taraması bekleniyor.')
+        knownIds.current = new Set()
+        if (!silent) toast.message('Önbellek boş', { description: hint })
+        return
+      }
 
       const oldKnown = new Set(knownIds.current)
       const newOnes = fresh.filter((d) => !oldKnown.has(d.id))

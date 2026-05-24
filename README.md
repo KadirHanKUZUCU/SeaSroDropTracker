@@ -56,9 +56,23 @@ Vercel’in kendi cron’unu kapatmak istersen `vercel.json` içindeki `"crons"`
 | Build fail | Vercel log → `npm run build` yerelde çalışıyor mu |
 | 0 drop | Blob bağlı mı + `CRON_SECRET` + cron-job veya manuel scrape URL’si |
 
-### İlk veri (664+ kayıt)
+### İlk veri (664+ kayıt) — Blob’a yükle
 
-Yerelde `server/drops-cache.json` varsa Blob’a yüklemek için Vercel Blob token ile `npm run import-html` sonrası deploy, veya panel açıkken birkaç saat cron + yenileme.
+Yerelde `server/drops-cache.json` varsa:
+
+```bash
+# Vercel → Storage → Blob → .env.local veya terminal:
+set BLOB_READ_WRITE_TOKEN=vercel_blob_...
+npm run upload-blob
+```
+
+Sonra paneli yenile. Veya deploy sonrası tarayıcıdan (CRON_SECRET ile):
+
+`https://PROJE.vercel.app/api/cron/scrape`
+
+### Sağlık kontrolü
+
+`https://PROJE.vercel.app/api/health` → `cached`, `blob: true` olmalı.
 
 ## Komutlar
 

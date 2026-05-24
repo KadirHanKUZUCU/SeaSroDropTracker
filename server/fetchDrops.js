@@ -163,6 +163,17 @@ export async function fetchFromPath(basePath, maxPages = 30) {
   return collected
 }
 
+/** Vercel cron için: drop + plus ilk sayfa (~50–100 kayıt, hızlı) */
+export async function fetchQuickLive() {
+  const paths = ['/logging/drop', '/logging/plus']
+  const byId = new Map()
+  for (const path of paths) {
+    const batch = await fetchFromPath(path, 1)
+    for (const d of batch) byId.set(d.id, d)
+  }
+  return [...byId.values()].sort((a, b) => a.rank - b.rank)
+}
+
 /** Drop + plus sayfalarından mümkün olduğunca çok kayıt */
 export async function fetchAllSources(maxPages = 150) {
   const paths = ['/logging/drop', '/logging/plus']

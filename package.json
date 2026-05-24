@@ -12,7 +12,8 @@
     "start": "node scripts/start-all.js",
     "start:ps": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-all.ps1",
     "backfill": "node scripts/backfill-drops.js",
-    "import-html": "node scripts/import-html.js server/rank-items-full.html --replace"
+    "import-html": "node scripts/import-html.js server/rank-items-full.html --replace",
+    "upload-blob": "node scripts/upload-cache-blob.js"
   },
   "dependencies": {
     "@vercel/blob": "^0.27.3",

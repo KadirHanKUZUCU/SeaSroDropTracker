@@ -72,6 +72,15 @@ function App() {
             />
           </aside>
           <section className="lg:col-span-2">
+            {error && !useSample && drops.length === 0 && (
+              <div className="mb-4 rounded-lg border border-amber-500/40 bg-amber-950/20 px-4 py-3 text-sm text-amber-100">
+                {error}
+                <p className="mt-2 text-xs text-amber-200/80">
+                  Vercel: Blob bağla → Redeploy →{' '}
+                  <code className="text-amber-100">/api/cron/scrape</code> veya cron-job.org
+                </p>
+              </div>
+            )}
             {error && useSample && (
               <div className="mb-4 rounded-lg border border-amber-500/40 bg-amber-950/20 px-4 py-3 text-sm text-amber-100">
                 Canlı veri alınamadı ({error}). Demo verisi gösteriliyor —{' '}

@@ -1,5 +1,9 @@
 import { runScrapeCron } from '../../server/dropApi.js'
 
+export const config = {
+  maxDuration: 10,
+}
+
 function authorizeCron(req) {
   const secret = process.env.CRON_SECRET
   if (!secret) return true
@@ -7,7 +11,6 @@ function authorizeCron(req) {
   return auth === `Bearer ${secret}`
 }
 
-/** Vercel Cron veya harici cron-job.org ile çağrılır */
 export default async function handler(req, res) {
   if (!authorizeCron(req)) {
     return res.status(401).json({ error: 'Unauthorized' })
