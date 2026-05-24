@@ -5,11 +5,12 @@ interface PlayerStat {
 
 interface Props {
   players: PlayerStat[]
+  onPlayerClick?: (playerName: string) => void
 }
 
 const medals = ['🥇', '🥈', '🥉']
 
-export function TopPlayers({ players }: Props) {
+export function TopPlayers({ players, onPlayerClick }: Props) {
   if (players.length === 0) return null
 
   return (
@@ -19,9 +20,11 @@ export function TopPlayers({ players }: Props) {
       </h2>
       <div className="grid gap-3 sm:grid-cols-3">
         {players.map((p, i) => (
-          <div
+          <button
             key={p.name}
-            className="flex items-center gap-3 rounded-xl border border-panel-border bg-panel-elevated px-4 py-3"
+            type="button"
+            onClick={() => onPlayerClick?.(p.name)}
+            className="flex items-center gap-3 rounded-xl border border-panel-border bg-panel-elevated px-4 py-3 text-left transition hover:border-accent-gold/40 hover:bg-panel-elevated/80"
           >
             <span className="text-2xl" aria-hidden>
               {medals[i] ?? `#${i + 1}`}
@@ -32,7 +35,7 @@ export function TopPlayers({ players }: Props) {
                 {p.count} drop{p.count !== 1 ? '' : ''}
               </p>
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </section>

@@ -4,8 +4,9 @@ import type { DropFilters, DropItem, DropsResponse } from '../types/drop'
 import { itemDetailUrl } from '../types/drop'
 import { enrichDrop } from '../lib/itemFormat'
 import { sampleDrops } from '../data/sampleDrops'
-
 import { getMsUntilNextCron, PANEL_REFRESH_AFTER_CRON_MS } from '../lib/syncSchedule'
+import { countNewSinceLastVisit, loadLastVisitSerials, saveLastVisitSerials } from '../lib/lastVisit'
+import { sortDrops, type SortMode } from '../lib/sortDrops'
 
 const API_DROPS = '/api/drops'
 
@@ -88,13 +89,15 @@ export function useDropFeed() {
     categories: [],
     weaponTypes: [],
   })
+  const [sort, setSort] = useState<SortMode>('newest')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastFetched, setLastFetched] = useState<string | null>(null)
   const [dbUpdatedAt, setDbUpdatedAt] = useState<string | null>(null)
   const [useSample, setUseSample] = useState(false)
   const [backfilling, setBackfilling] = useState(false)
-  const knownIds = useRef<Set<string>>(new Set())
+  const [newDropCount, setNewDropCount] = useState(0)
+  const lastVisitSerials = useRef(loadLastVisitSerials())
 
   const refresh = useCallback(async (silent = false) => {
     setLoading(true)
@@ -108,37 +111,52 @@ export function useDropFeed() {
 
       if (emptyCache && fresh.length === 0) {
         setDrops([])
-        setError(hint ?? 'Önbellek boş — cron taraması bekleniyor.')
-        knownIds.current = new Set()
-        if (!silent) toast.message('Önbellek boş', { description: hint })
+        setError(hint ?? 'Henüz drop kaydı yok. Kısa süre sonra tekrar deneyin.')
+        setNewDropCount(0)
+        if (!silent) toast.message('Liste boş', { description: 'Veri henüz hazırlanmıyor olabilir.' })
         return
       }
 
-      const oldKnown = new Set(knownIds.current)
-      const newOnes = fresh.filter((d) => !oldKnown.has(d.id))
-      fresh.forEach((d) => knownIds.current.add(d.id))
+      const newSinceVisit = countNewSinceLastVisit(fresh, lastVisitSerials.current)
+      setNewDropCount(newSinceVisit)
       setDrops(fresh)
 
-      if (newOnes.length > 0) {
-        if (!silent) {
-          toast.success(`${newOnes.length} yeni drop`, {
-            description: newOnes.slice(0, 3).map((d) => d.displayName).join(', '),
-          })
-        }
-      } else if (!silent) {
-        toast.message('Liste güncel', { description: `${fresh.length} kayıt.` })
+      if (!silent && fresh.length > 0) {
+        toast.message('Liste güncellendi', { description: `${fresh.length} kayıt.` })
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Bilinmeyen hata'
       setError(msg)
-      if (!silent) toast.error('Drop listesi alınamadı', { description: msg })
+      if (!silent) {
+        const description = import.meta.env.DEV
+          ? msg
+          : 'Sunucuya ulaşılamadı. Biraz sonra yenileyin.'
+        toast.error('Drop listesi alınamadı', { description })
+      }
       setUseSample(true)
       setDrops(sampleDrops)
-      knownIds.current = new Set(sampleDrops.map((d) => d.id))
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const markNewDropsSeen = useCallback(() => {
+    const serials = drops.map((d) => d.serial).filter(Boolean)
+    if (serials.length) {
+      saveLastVisitSerials(serials)
+      lastVisitSerials.current = new Set(serials)
+    }
+    setNewDropCount(0)
+  }, [drops])
+
+  useEffect(() => {
+    const saveOnLeave = () => {
+      const serials = drops.map((d) => d.serial).filter(Boolean)
+      if (serials.length) saveLastVisitSerials(serials)
+    }
+    window.addEventListener('pagehide', saveOnLeave)
+    return () => window.removeEventListener('pagehide', saveOnLeave)
+  }, [drops])
 
   const backfill = useCallback(async () => {
     setBackfilling(true)
@@ -151,13 +169,12 @@ export function useDropFeed() {
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = (await res.json()) as DropsResponse & { backfillAdded?: number; scrapedCount?: number }
-      const drops = dedupeClient((data.drops ?? []).map((d) => normalizeDrop(d)))
-      drops.forEach((d) => knownIds.current.add(d.id))
-      setDrops(drops)
+      const next = dedupeClient((data.drops ?? []).map((d) => normalizeDrop(d)))
+      setDrops(next)
       setLastFetched(data.fetchedAt)
       setUseSample(false)
       toast.success('Tarama tamamlandı', {
-        description: `+${data.backfillAdded ?? 0} yeni · Toplam ${drops.length} kayıt`,
+        description: `+${data.backfillAdded ?? 0} yeni · Toplam ${next.length} kayıt`,
       })
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Tarama başarısız'
@@ -171,7 +188,6 @@ export function useDropFeed() {
     refresh(true)
   }, [refresh])
 
-  /** cron-job 10 dk sonrası paneli yenile (tarama ~2 sn sürer) */
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>
 
@@ -188,6 +204,11 @@ export function useDropFeed() {
   }, [refresh])
 
   const filtered = useMemo(() => applyFilters(drops, filters), [drops, filters])
+  const sortedFiltered = useMemo(() => sortDrops(filtered, sort), [filtered, sort])
+
+  const filterByPlayer = useCallback((playerName: string) => {
+    setFilters((f) => ({ ...f, player: playerName }))
+  }, [])
 
   const stats = useMemo(() => {
     const players = new Set(drops.map((d) => d.playerName).filter(Boolean))
@@ -208,9 +229,12 @@ export function useDropFeed() {
 
   return {
     drops,
-    filtered,
+    filtered: sortedFiltered,
+    filteredCount: filtered.length,
     filters,
     setFilters,
+    sort,
+    setSort,
     loading,
     error,
     lastFetched,
@@ -221,5 +245,8 @@ export function useDropFeed() {
     backfill,
     stats,
     topPlayers,
+    newDropCount,
+    markNewDropsSeen,
+    filterByPlayer,
   }
 }

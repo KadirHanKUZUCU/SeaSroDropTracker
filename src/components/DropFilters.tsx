@@ -11,6 +11,8 @@ interface Props {
   onBackfill?: () => void
   loading: boolean
   backfilling?: boolean
+  /** Mobil drawer içinde üst başlık gizlenir */
+  embedded?: boolean
 }
 
 export function hasActiveFilters(f: DropFilters): boolean {
@@ -79,14 +81,21 @@ export function DropFilters({
   onBackfill,
   loading,
   backfilling,
+  embedded = false,
 }: Props) {
   const toggleWeapon = (id: WeaponSubtype) =>
     onChange({ ...filters, weaponTypes: toggleInList(filters.weaponTypes, id) })
 
   return (
-    <div className="rounded-xl border border-panel-border bg-panel-elevated p-4 shadow-xl">
+    <div
+      className={
+        embedded
+          ? ''
+          : 'rounded-xl border border-panel-border bg-panel-elevated p-4 shadow-xl'
+      }
+    >
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-display text-lg font-semibold text-white">Filtreler</h2>
+        {!embedded && <h2 className="font-display text-lg font-semibold text-white">Filtreler</h2>}
         <div className="flex flex-wrap gap-2">
           <button
             type="button"

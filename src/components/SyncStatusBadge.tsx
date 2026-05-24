@@ -1,10 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  CRON_INTERVAL_MINUTES,
-  formatCountdown,
-  getMsUntilNextCron,
-  getNextCronDate,
-} from '../lib/syncSchedule'
+import { CRON_INTERVAL_MINUTES, formatCountdown, getMsUntilNextCron } from '../lib/syncSchedule'
 
 interface Props {
   dbUpdatedAt: string | null
@@ -21,7 +16,6 @@ export function SyncStatusBadge({ dbUpdatedAt, loading }: Props) {
     return () => window.clearInterval(id)
   }, [])
 
-  const nextAt = getNextCronDate()
   const dbLabel = dbUpdatedAt
     ? new Date(dbUpdatedAt).toLocaleString('tr-TR', {
         day: '2-digit',
@@ -51,9 +45,6 @@ export function SyncStatusBadge({ dbUpdatedAt, loading }: Props) {
       <p className="font-mono text-sm tabular-nums text-white">
         Sonraki tarama:{' '}
         <span className="text-accent-gold">{formatCountdown(msLeft)}</span>
-      </p>
-      <p className="text-[10px] text-slate-500">
-        {nextAt.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} · cron-job.org
       </p>
       <p className="text-[10px] text-slate-600">DB son güncelleme: {dbLabel}</p>
     </div>

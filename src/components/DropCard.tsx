@@ -4,22 +4,22 @@ import { tierBadgeClass } from '../lib/itemFormat'
 
 interface Props {
   drop: DropItem
-  /** Liste sırası (verideki rank çakışmasını önler) */
   displayRank?: number
+  onPlayerClick?: (playerName: string) => void
 }
 
-export function DropCard({ drop, displayRank }: Props) {
+export function DropCard({ drop, displayRank, onPlayerClick }: Props) {
   const href = drop.serial ? itemDetailUrl(drop.serial) : drop.itemUrl
 
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex gap-4 rounded-xl border border-panel-border bg-panel-elevated p-4 transition hover:border-accent-gold/40 hover:shadow-lg hover:shadow-accent-gold/5"
-      title={`Detay: ${drop.itemName}`}
-    >
-      <div className="relative shrink-0">
+    <article className="group flex gap-4 rounded-xl border border-panel-border bg-panel-elevated p-4 transition hover:border-accent-gold/40 hover:shadow-lg hover:shadow-accent-gold/5">
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="relative shrink-0"
+        title={`Detay: ${drop.itemName}`}
+      >
         <span className="absolute -left-1 -top-1 z-10 flex h-5 w-5 items-center justify-center rounded bg-panel-elevated text-[10px] font-bold text-accent-gold">
           {displayRank ?? drop.rank}
         </span>
@@ -34,12 +34,19 @@ export function DropCard({ drop, displayRank }: Props) {
             }}
           />
         </div>
-      </div>
+      </a>
       <div className="min-w-0 flex-1">
-        <p className="line-clamp-2 font-semibold leading-snug text-white group-hover:text-accent-gold">
-          {drop.displayName}
-        </p>
-        <p className="mt-0.5 truncate font-mono text-[10px] text-slate-500">{drop.itemName}</p>
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block hover:text-accent-gold"
+        >
+          <p className="line-clamp-2 font-semibold leading-snug text-white group-hover:text-accent-gold">
+            {drop.displayName}
+          </p>
+          <p className="mt-0.5 truncate font-mono text-[10px] text-slate-500">{drop.itemName}</p>
+        </a>
         <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-accent-muted">
           <img
             src={`https://110cap.seasro.com/Image/Game/CharPortrait/${drop.playerName}.webp`}
@@ -49,7 +56,17 @@ export function DropCard({ drop, displayRank }: Props) {
               ;(e.target as HTMLImageElement).style.display = 'none'
             }}
           />
-          <span>{drop.playerName}</span>
+          {onPlayerClick && drop.playerName ? (
+            <button
+              type="button"
+              onClick={() => onPlayerClick(drop.playerName)}
+              className="font-medium text-slate-300 underline decoration-accent-gold/40 underline-offset-2 hover:text-accent-gold"
+            >
+              {drop.playerName}
+            </button>
+          ) : (
+            <span>{drop.playerName}</span>
+          )}
         </p>
         <p className="mt-2 text-xs font-medium text-cyan-400">{drop.timeText}</p>
         <p className="mt-1 font-mono text-[10px] text-slate-600">#{drop.serial}</p>
@@ -61,6 +78,6 @@ export function DropCard({ drop, displayRank }: Props) {
           </span>
         ) : null}
       </div>
-    </a>
+    </article>
   )
 }
