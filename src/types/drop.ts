@@ -46,10 +46,12 @@ export const EMPTY_FILTERS: DropFilters = {
 export interface DropsResponse {
   drops: DropItem[]
   fetchedAt: string
+  cacheUpdatedAt?: string
   liveCount?: number
   totalCount?: number
   cachedCount?: number
   sourceNote?: string | null
   fromCacheOnly?: boolean
   backfillAdded?: number
+  fromCache?: boolean
 }

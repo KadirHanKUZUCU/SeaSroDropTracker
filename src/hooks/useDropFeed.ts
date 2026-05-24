@@ -5,7 +5,8 @@ import { itemDetailUrl } from '../types/drop'
 import { enrichDrop } from '../lib/itemFormat'
 import { sampleDrops } from '../data/sampleDrops'
 
-const POLL_MS = 45_000
+import { getMsUntilNextCron, PANEL_REFRESH_AFTER_CRON_MS } from '../lib/syncSchedule'
+
 const API_DROPS = '/api/drops'
 
 function applyFilters(drops: DropItem[], filters: DropFilters): DropItem[] {
@@ -90,18 +91,19 @@ export function useDropFeed() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastFetched, setLastFetched] = useState<string | null>(null)
+  const [dbUpdatedAt, setDbUpdatedAt] = useState<string | null>(null)
   const [useSample, setUseSample] = useState(false)
   const [backfilling, setBackfilling] = useState(false)
   const knownIds = useRef<Set<string>>(new Set())
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const refresh = useCallback(async (silent = false) => {
     setLoading(true)
     setError(null)
     try {
       const data = await fetchDrops()
-      const { drops: fresh, fetchedAt, hint, emptyCache } = data
+      const { drops: fresh, fetchedAt, hint, emptyCache, cacheUpdatedAt } = data
       setLastFetched(fetchedAt)
+      setDbUpdatedAt(cacheUpdatedAt ?? fetchedAt ?? null)
       setUseSample(false)
 
       if (emptyCache && fresh.length === 0) {
@@ -169,11 +171,20 @@ export function useDropFeed() {
     refresh(true)
   }, [refresh])
 
+  /** cron-job 10 dk sonrası paneli yenile (tarama ~2 sn sürer) */
   useEffect(() => {
-    pollRef.current = setInterval(() => refresh(true), POLL_MS)
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current)
+    let timeoutId: ReturnType<typeof setTimeout>
+
+    const schedule = () => {
+      const delay = getMsUntilNextCron() + PANEL_REFRESH_AFTER_CRON_MS
+      timeoutId = setTimeout(() => {
+        refresh(true)
+        schedule()
+      }, delay)
     }
+
+    schedule()
+    return () => clearTimeout(timeoutId)
   }, [refresh])
 
   const filtered = useMemo(() => applyFilters(drops, filters), [drops, filters])
@@ -203,6 +214,7 @@ export function useDropFeed() {
     loading,
     error,
     lastFetched,
+    dbUpdatedAt,
     useSample,
     backfilling,
     refresh,

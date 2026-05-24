@@ -2,6 +2,7 @@ import { Toaster } from 'sonner'
 import { DropFilters } from './components/DropFilters'
 import { DropList } from './components/DropList'
 import { TopPlayers } from './components/TopPlayers'
+import { SyncStatusBadge } from './components/SyncStatusBadge'
 import { useDropFeed } from './hooks/useDropFeed'
 
 function App() {
@@ -12,7 +13,7 @@ function App() {
     setFilters,
     loading,
     error,
-    lastFetched,
+    dbUpdatedAt,
     useSample,
     refresh,
     stats,
@@ -38,11 +39,7 @@ function App() {
               )}
             </p>
           </div>
-          {lastFetched && (
-            <p className="text-xs text-slate-500">
-              Son güncelleme: {new Date(lastFetched).toLocaleString('tr-TR')}
-            </p>
-          )}
+          <SyncStatusBadge dbUpdatedAt={dbUpdatedAt} loading={loading} />
         </div>
       </header>
 
