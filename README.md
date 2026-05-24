@@ -16,27 +16,45 @@ Panel: http://localhost:5173
 
 ## 7/24 tarama (Vercel)
 
-Vercel sunucusuz ortamda sürekli process çalışmaz; **Cron Job** periyodik olarak `/api/cron/scrape` çağırır, yeni droplar **Vercel Blob** içinde birikir.
+Vercel’de sürekli process yok; tarama **`/api/cron/scrape`** ile yapılır, veri **Vercel Blob**’da kalır.
 
 | Bileşen | Görev |
 |--------|--------|
-| `GET /api/drops` | Önbellek + canlı site merge |
-| `GET /api/cron/scrape` | Saatlik tarama (cron) |
-| Vercel Blob | `drops-cache.json` kalıcı depo |
+| `GET /api/drops` | Önbellek + canlı site |
+| `GET /api/cron/scrape` | Site tarama |
+| Vercel Blob | Kalıcı `drops-cache.json` |
 
-### Vercel deploy
+### Vercel deploy (Hobby uyumlu)
 
-1. Repoyu GitHub’a push et.
-2. [Vercel](https://vercel.com) → Import → `KadirHanKUZUCU/SeaSroDropTracker`
-3. **Storage** → Blob → Create → projeye bağla (`BLOB_READ_WRITE_TOKEN` otomatik eklenir).
-4. **Settings → Environment Variables:**
-   - `CRON_SECRET` — rastgele uzun bir string (cron güvenliği)
-5. Deploy.
+1. [Vercel](https://vercel.com) → **Add New → Project** → GitHub `SeaSroDropTracker`
+2. Framework: **Vite** (otomatik algılanır) → **Deploy**
+3. Deploy başarılı olduktan sonra:
+   - **Storage** → **Blob** → Create → bu projeye **Connect**
+   - **Settings → Environment Variables** → ekle:
+     - `CRON_SECRET` = örn. `openssl rand -hex 32` ile ürettiğin uzun şifre
+   - **Deployments** → son deploy → **⋯** → **Redeploy** (env + blob sonrası şart)
+4. Panel: `https://PROJE-ADI.vercel.app`
 
-Cron `vercel.json` içinde **saatte bir** (`0 * * * *`) tanımlı. Daha sık tarama için [cron-job.org](https://cron-job.org) ile:
+> **Hobby cron limiti:** Vercel Hobby’de cron **günde 1 kez** çalışır (`0 6 * * *` = her gün 06:00 UTC). Saatlik tarama için aşağıdaki **cron-job.org** kullan.
 
-`GET https://SENIN-PROJE.vercel.app/api/cron/scrape`  
-Header: `Authorization: Bearer CRON_SECRET_DEĞERİN`
+### Sık tarama (ücretsiz, önerilen)
+
+[cron-job.org](https://cron-job.org) → Create cron job:
+
+- **URL:** `https://PROJE-ADI.vercel.app/api/cron/scrape`
+- **Schedule:** her 10–15 dakika
+- **Request headers:**  
+  `Authorization` = `Bearer CRON_SECRET_DEĞERİN`
+
+Vercel’in kendi cron’unu kapatmak istersen `vercel.json` içindeki `"crons"` dizisini `[]` yapıp redeploy et.
+
+### Deploy hata alırsan
+
+| Hata | Çözüm |
+|------|--------|
+| Cron günde 1’den fazla | `vercel.json` schedule `0 6 * * *` olmalı (repo güncel mi kontrol et) |
+| Build fail | Vercel log → `npm run build` yerelde çalışıyor mu |
+| 0 drop | Blob bağlı mı + `CRON_SECRET` + cron-job veya manuel scrape URL’si |
 
 ### İlk veri (664+ kayıt)
 
