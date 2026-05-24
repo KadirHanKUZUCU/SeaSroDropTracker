@@ -126,7 +126,7 @@ export function DropFilters({
         </div>
       </div>
 
-      <div className="grid max-h-[calc(100vh-12rem)] gap-4 overflow-y-auto pr-1">
+      <div className="scrollbar-hidden grid max-h-[calc(100vh-12rem)] gap-4 overflow-y-auto">
         <label className="block text-xs font-medium text-accent-muted">
           Arama
           <input
