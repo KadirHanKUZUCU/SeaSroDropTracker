@@ -9,6 +9,25 @@ import { fileURLToPath } from 'node:url'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const cacheFile = path.join(root, 'server', 'drops-cache.json')
 
+function loadEnvLocal() {
+  const envPath = path.join(root, '.env.local')
+  if (!fs.existsSync(envPath)) return
+  for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const eq = trimmed.indexOf('=')
+    if (eq === -1) continue
+    const key = trimmed.slice(0, eq).trim()
+    let val = trimmed.slice(eq + 1).trim()
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1)
+    }
+    if (!process.env[key]) process.env[key] = val
+  }
+}
+
+loadEnvLocal()
+
 if (!process.env.BLOB_READ_WRITE_TOKEN) {
   console.error('BLOB_READ_WRITE_TOKEN gerekli (Vercel → Storage → Blob → token)')
   process.exit(1)
