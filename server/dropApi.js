@@ -1,6 +1,6 @@
 import { backfillAll, fetchAllSources, fetchQuickLive, itemDetailUrl } from './fetchDrops.js'
 import { loadCache, mergeDrops, saveCache } from './dropStore.js'
-import { assertCacheNotShrunk } from './dropUtils.js'
+import { assertCacheNotShrunk, sortDropsNewestFirst } from './dropUtils.js'
 
 const IS_VERCEL = Boolean(process.env.VERCEL)
 
@@ -26,11 +26,12 @@ export async function getDropsResponse() {
           'Önbellek boş. Vercel Blob bağlayıp Redeploy edin, ardından /api/cron/scrape veya cron-job.org ile tarama yapın.',
       }
     }
+    const sorted = sortDropsNewestFirst(cached)
     return {
-      drops: withItemUrls(cached),
+      drops: withItemUrls(sorted),
       fetchedAt: new Date().toISOString(),
       cacheUpdatedAt,
-      totalCount: cached.length,
+      totalCount: sorted.length,
       fromCache: true,
     }
   }

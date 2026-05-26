@@ -1,3 +1,7 @@
+import { dropSortScore, parseDropTimeMs } from './dropTime.js'
+
+export { parseDropTimeMs, dropSortScore } from './dropTime.js'
+
 /** Geçerli drop anahtarı yalnızca serial (aynı item tekrar etmesin). */
 export function dropKey(d) {
   const serial = String(d?.serial ?? '').trim()
@@ -13,26 +17,23 @@ function richness(d) {
   return n
 }
 
-/** En yeni önce: son canlı tarama → sayfa sırası → serial */
-export function sortDropsNewestFirst(drops) {
+/** Resmi site ile aynı: yüksek serial = daha yeni drop */
+export function sortDropsNewestFirst(drops, now = Date.now()) {
   return [...drops]
     .sort((a, b) => {
-      const seen = String(b.lastSeenAt ?? '').localeCompare(String(a.lastSeenAt ?? ''))
-      if (seen !== 0) return seen
+      const scoreDiff = dropSortScore(b, now) - dropSortScore(a, now)
+      if (scoreDiff !== 0) return scoreDiff
 
-      const live = (a.liveRank ?? 9999) - (b.liveRank ?? 9999)
-      if (live !== 0) return live
+      const ta = parseDropTimeMs(a.timeText, now)
+      const tb = parseDropTimeMs(b.timeText, now)
+      if (ta != null && tb != null && ta !== tb) return tb - ta
 
-      const sa = Number(a.serial)
-      const sb = Number(b.serial)
-      if (!Number.isNaN(sa) && !Number.isNaN(sb) && sa !== sb) return sb - sa
-
-      return String(b.timeText).localeCompare(String(a.timeText), 'tr')
+      return Number(b.serial) - Number(a.serial)
     })
     .map((d, i) => ({ ...d, rank: i + 1 }))
 }
 
-/** Serial olmayan kayıtları atar; aynı serial için en dolu + güncel canlı bilgiyi tutar. */
+/** Serial olmayan kayıtları atar; aynı serial için en dolu kaydı tutar. */
 export function dedupeDrops(drops) {
   const bySerial = new Map()
   for (const d of drops) {
@@ -47,37 +48,28 @@ export function dedupeDrops(drops) {
 }
 
 export function mergeDrops(existing, incoming) {
-  const now = new Date().toISOString()
   const bySerial = new Map()
 
   for (const d of existing ?? []) {
     const key = dropKey(d)
     if (!key) continue
-    bySerial.set(key, {
-      ...d,
-      id: key,
-      serial: key,
-      firstSeenAt: d.firstSeenAt ?? d.lastSeenAt ?? null,
-      lastSeenAt: d.lastSeenAt ?? null,
-      liveRank: d.liveRank ?? d.rank ?? null,
-    })
+    bySerial.set(key, { ...d, id: key, serial: key })
   }
 
   for (const d of incoming ?? []) {
     const key = dropKey(d)
     if (!key) continue
     const prev = bySerial.get(key)
-    const base = prev && richness(prev) > richness(d) ? { ...d, ...prev } : { ...prev, ...d }
+    const richer = prev && richness(prev) > richness(d) ? { ...d, ...prev } : { ...prev, ...d }
     bySerial.set(key, {
-      ...base,
+      ...richer,
       id: key,
       serial: key,
-      firstSeenAt: prev?.firstSeenAt ?? now,
-      lastSeenAt: now,
       liveRank: d.rank ?? prev?.liveRank ?? null,
       timeText: d.timeText || prev?.timeText || '',
       playerName: d.playerName || prev?.playerName || '',
       iconUrl: d.iconUrl || prev?.iconUrl || '',
+      itemName: d.itemName || prev?.itemName || '',
     })
   }
 

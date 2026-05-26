@@ -9,6 +9,11 @@ export const SORT_OPTIONS: { id: SortMode; label: string }[] = [
   { id: 'player-asc', label: 'Oyuncu (A → Z)' },
 ]
 
+function dropSerialScore(d: DropItem): number {
+  const serial = Number(d.serial)
+  return Number.isNaN(serial) ? 0 : serial
+}
+
 export function sortDrops(drops: DropItem[], mode: SortMode): DropItem[] {
   const list = [...drops]
   switch (mode) {
@@ -20,12 +25,6 @@ export function sortDrops(drops: DropItem[], mode: SortMode): DropItem[] {
       return list.sort((a, b) => a.playerName.localeCompare(b.playerName, 'tr'))
     case 'newest':
     default:
-      return list.sort((a, b) => {
-        const seen = String(b.lastSeenAt ?? '').localeCompare(String(a.lastSeenAt ?? ''))
-        if (seen !== 0) return seen
-        const live = (a.liveRank ?? a.rank) - (b.liveRank ?? b.rank)
-        if (live !== 0) return live
-        return a.rank - b.rank
-      })
+      return list.sort((a, b) => dropSerialScore(b) - dropSerialScore(a))
   }
 }
