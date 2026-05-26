@@ -84,14 +84,62 @@ export function DropFilters({
   backfilling,
   embedded = false,
 }: Props) {
+  const raceCh = filters.races.includes('CH')
+  const raceEu = filters.races.includes('EU')
   const hasChWeapons = filters.weaponTypes.some((w) => w.startsWith('ch_'))
   const hasEuWeapons = filters.weaponTypes.some((w) => w.startsWith('eu_'))
+
+  const euWeaponsBlocked = raceCh || hasChWeapons
+  const chWeaponsBlocked = raceEu || hasEuWeapons
+
+  const toggleRace = (id: ItemRace) => {
+    const turningOn = !filters.races.includes(id)
+
+    if (turningOn && id === 'CH' && hasEuWeapons) {
+      toast.message('EU silahları seçili', {
+        description: 'CH ırkı için önce EU silahlarını temizleyin.',
+      })
+      return
+    }
+    if (turningOn && id === 'EU' && hasChWeapons) {
+      toast.message('CH silahları seçili', {
+        description: 'EU ırkı için önce CH silahlarını temizleyin.',
+      })
+      return
+    }
+    if (turningOn && id === 'CH' && raceEu) {
+      toast.message('EU ırkı seçili', {
+        description: 'CH ırkı için önce EU ırkını kaldırın.',
+      })
+      return
+    }
+    if (turningOn && id === 'EU' && raceCh) {
+      toast.message('CH ırkı seçili', {
+        description: 'EU ırkı için önce CH ırkını kaldırın.',
+      })
+      return
+    }
+
+    onChange({ ...filters, races: toggleInList(filters.races, id) })
+  }
 
   const toggleWeapon = (id: WeaponSubtype) => {
     const isCh = id.startsWith('ch_')
     const isEu = id.startsWith('eu_')
     const turningOn = !filters.weaponTypes.includes(id)
 
+    if (turningOn && isEu && raceCh) {
+      toast.message('CH ırkı seçili', {
+        description: 'EU silahları için önce CH ırkını kaldırın veya CH silahlarını seçin.',
+      })
+      return
+    }
+    if (turningOn && isCh && raceEu) {
+      toast.message('EU ırkı seçili', {
+        description: 'CH silahları için önce EU ırkını kaldırın veya EU silahlarını seçin.',
+      })
+      return
+    }
     if (turningOn && isEu && hasChWeapons) {
       toast.message('CH silahları seçili', {
         description: 'EU silahları için önce CH silahlarını temizleyin.',
@@ -189,7 +237,7 @@ export function DropFilters({
               <li key={id}>
                 <FilterButton
                   active={filters.races.includes(id)}
-                  onClick={() => onChange({ ...filters, races: toggleInList(filters.races, id) })}
+                  onClick={() => toggleRace(id)}
                 >
                   {label}
                 </FilterButton>
@@ -256,9 +304,12 @@ export function DropFilters({
           </ul>
         </div>
 
-        <div>
+        <div className={chWeaponsBlocked ? 'rounded-lg opacity-50' : undefined}>
           <div className="mb-2 flex items-center justify-between">
             <p className="text-xs font-medium text-accent-muted">CH Silahlar</p>
+            {raceEu && (
+              <span className="text-[10px] text-amber-400/90">EU ırkı seçili</span>
+            )}
             {filters.weaponTypes.some((w) => w.startsWith('ch_')) && (
               <button
                 type="button"
@@ -277,7 +328,10 @@ export function DropFilters({
           <ul className="flex flex-col gap-1">
             {CH_WEAPON_FILTERS.map(({ id, label }) => (
               <li key={id}>
-                <FilterButton active={filters.weaponTypes.includes(id)} onClick={() => toggleWeapon(id)}>
+                <FilterButton
+                  active={filters.weaponTypes.includes(id)}
+                  onClick={() => toggleWeapon(id)}
+                >
                   {label}
                 </FilterButton>
               </li>
@@ -285,9 +339,12 @@ export function DropFilters({
           </ul>
         </div>
 
-        <div>
+        <div className={euWeaponsBlocked ? 'rounded-lg opacity-50' : undefined}>
           <div className="mb-2 flex items-center justify-between">
             <p className="text-xs font-medium text-accent-muted">EU Silahlar</p>
+            {raceCh && (
+              <span className="text-[10px] text-amber-400/90">CH ırkı seçili</span>
+            )}
             {filters.weaponTypes.some((w) => w.startsWith('eu_')) && (
               <button
                 type="button"
