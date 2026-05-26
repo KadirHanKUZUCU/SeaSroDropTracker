@@ -55,7 +55,10 @@ export async function loadCache() {
   }
 }
 
-export async function saveCache(drops) {
+export async function saveCache(drops, { previousCount = 0 } = {}) {
+  const { assertCacheNotShrunk } = await import('./dropUtils.js')
+  if (previousCount > 0) assertCacheNotShrunk(previousCount, drops.length)
+
   const payload = {
     updatedAt: new Date().toISOString(),
     drops,

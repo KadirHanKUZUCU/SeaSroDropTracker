@@ -20,6 +20,12 @@ export function sortDrops(drops: DropItem[], mode: SortMode): DropItem[] {
       return list.sort((a, b) => a.playerName.localeCompare(b.playerName, 'tr'))
     case 'newest':
     default:
-      return list.sort((a, b) => a.rank - b.rank)
+      return list.sort((a, b) => {
+        const seen = String(b.lastSeenAt ?? '').localeCompare(String(a.lastSeenAt ?? ''))
+        if (seen !== 0) return seen
+        const live = (a.liveRank ?? a.rank) - (b.liveRank ?? b.rank)
+        if (live !== 0) return live
+        return a.rank - b.rank
+      })
   }
 }

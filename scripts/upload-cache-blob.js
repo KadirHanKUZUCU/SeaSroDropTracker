@@ -39,15 +39,18 @@ if (!fs.existsSync(cacheFile)) {
 }
 
 const raw = JSON.parse(fs.readFileSync(cacheFile, 'utf8'))
+const { dedupeDrops } = await import('../server/dropUtils.js')
+const drops = dedupeDrops(raw.drops ?? [])
+const payload = { ...raw, drops, updatedAt: new Date().toISOString() }
 const { put } = await import('@vercel/blob')
 
 const access = process.env.BLOB_ACCESS === 'public' ? 'public' : 'private'
 
-await put('drops-cache.json', JSON.stringify(raw), {
+await put('drops-cache.json', JSON.stringify(payload), {
   access,
   addRandomSuffix: false,
   allowOverwrite: true,
   contentType: 'application/json',
 })
 
-console.log('Yüklendi:', raw.drops?.length ?? 0, 'kayıt → Vercel Blob')
+console.log('Yüklendi:', drops.length, 'kayıt → Vercel Blob')

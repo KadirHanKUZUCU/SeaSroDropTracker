@@ -36,14 +36,17 @@ function applyFilters(drops: DropItem[], filters: DropFilters): DropItem[] {
   })
 }
 
+/** API sırasını koru; rank’i sunucudan gelen değerde bırak */
 function dedupeClient(drops: DropItem[]): DropItem[] {
   const bySerial = new Map<string, DropItem>()
+  const order: string[] = []
   for (const d of drops) {
     const serial = d.serial?.trim()
     if (!serial) continue
+    if (!bySerial.has(serial)) order.push(serial)
     bySerial.set(serial, { ...d, id: serial, serial })
   }
-  return [...bySerial.values()].map((d, i) => ({ ...d, rank: i + 1 }))
+  return order.map((serial) => bySerial.get(serial)!)
 }
 
 function normalizeDrop(raw: Partial<DropItem> & { itemName: string }): DropItem {

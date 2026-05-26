@@ -23,6 +23,11 @@ export interface DropItem {
   tier: ItemTier
   weaponSubtype: WeaponSubtype | null
   itemUrl: string
+  /** Son canlı taramada görülme (ISO) */
+  lastSeenAt?: string | null
+  firstSeenAt?: string | null
+  /** O taramadaki sıra (1 = sayfanın en üstü / en yeni) */
+  liveRank?: number | null
 }
 
 export interface DropFilters {

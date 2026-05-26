@@ -1,6 +1,7 @@
 import type { DropItem } from '../types/drop'
 import { itemDetailUrl } from '../types/drop'
 import { tierBadgeClass } from '../lib/itemFormat'
+import { PlayerAvatar } from './PlayerAvatar'
 
 interface Props {
   drop: DropItem
@@ -48,14 +49,7 @@ export function DropCard({ drop, displayRank, onPlayerClick }: Props) {
           <p className="mt-0.5 truncate font-mono text-[10px] text-slate-500">{drop.itemName}</p>
         </a>
         <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-accent-muted">
-          <img
-            src={`https://110cap.seasro.com/Image/Game/CharPortrait/${drop.playerName}.webp`}
-            alt=""
-            className="h-4 w-4 rounded-full object-cover"
-            onError={(e) => {
-              ;(e.target as HTMLImageElement).style.display = 'none'
-            }}
-          />
+          {drop.playerName ? <PlayerAvatar name={drop.playerName} /> : null}
           {onPlayerClick && drop.playerName ? (
             <button
               type="button"

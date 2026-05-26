@@ -1,5 +1,6 @@
 import { backfillAll, fetchAllSources, fetchQuickLive, itemDetailUrl } from './fetchDrops.js'
 import { loadCache, mergeDrops, saveCache } from './dropStore.js'
+import { assertCacheNotShrunk } from './dropUtils.js'
 
 const IS_VERCEL = Boolean(process.env.VERCEL)
 
@@ -37,7 +38,7 @@ export async function getDropsResponse() {
   try {
     const live = await fetchAllSources(80)
     const merged = mergeDrops(cached, live)
-    const updatedAt = await saveCache(merged)
+    const updatedAt = await saveCache(merged, { previousCount: cached.length })
     return {
       drops: withItemUrls(merged),
       fetchedAt: new Date().toISOString(),
@@ -65,7 +66,8 @@ export async function runScrapeCron() {
   const before = cached.length
   const live = await fetchQuickLive()
   const merged = mergeDrops(cached, live)
-  const updatedAt = await saveCache(merged)
+  assertCacheNotShrunk(before, merged.length)
+  const updatedAt = await saveCache(merged, { previousCount: before })
   return {
     before,
     liveFound: live.length,
@@ -81,7 +83,7 @@ export async function runBackfill(maxPages = 200) {
   const before = cached.length
   const scraped = await backfillAll(IS_VERCEL ? 3 : maxPages)
   const merged = mergeDrops(cached, scraped)
-  await saveCache(merged)
+  await saveCache(merged, { previousCount: before })
   return {
     drops: withItemUrls(merged),
     fetchedAt: new Date().toISOString(),
