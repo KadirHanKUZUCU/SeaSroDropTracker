@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { toast } from 'sonner'
 import type { DropFilters } from '../types/drop'
 import { EMPTY_FILTERS } from '../types/drop'
 import type { ItemCategory, ItemRace, WeaponSubtype } from '../lib/itemFormat'
@@ -83,8 +84,29 @@ export function DropFilters({
   backfilling,
   embedded = false,
 }: Props) {
-  const toggleWeapon = (id: WeaponSubtype) =>
+  const hasChWeapons = filters.weaponTypes.some((w) => w.startsWith('ch_'))
+  const hasEuWeapons = filters.weaponTypes.some((w) => w.startsWith('eu_'))
+
+  const toggleWeapon = (id: WeaponSubtype) => {
+    const isCh = id.startsWith('ch_')
+    const isEu = id.startsWith('eu_')
+    const turningOn = !filters.weaponTypes.includes(id)
+
+    if (turningOn && isEu && hasChWeapons) {
+      toast.message('CH silahları seçili', {
+        description: 'EU silahları için önce CH silahlarını temizleyin.',
+      })
+      return
+    }
+    if (turningOn && isCh && hasEuWeapons) {
+      toast.message('EU silahları seçili', {
+        description: 'CH silahları için önce EU silahlarını temizleyin.',
+      })
+      return
+    }
+
     onChange({ ...filters, weaponTypes: toggleInList(filters.weaponTypes, id) })
+  }
 
   return (
     <div
