@@ -23,6 +23,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Son ziyaretten sonra gelen yeni droplar için “+N yeni drop” rozeti eklendi.',
       'Mobilde filtreler alttan açılan çekmece (drawer) ile kullanılıyor.',
       'Filtre listesindeki eski görünümlü kaydırma çubuğu kaldırıldı.',
+      'CH ırkı seçiliyken EU silahları, EU ırkı seçiliyken CH silahları seçilemiyor — uyarı toast ile gösteriliyor.',
+      'CH ve EU silahları aynı anda seçilemiyor; karışık seçimde boş liste çıkmaması için engellendi.',
     ],
   },
   {
