@@ -7,12 +7,15 @@ import { SyncStatusBadge } from './components/SyncStatusBadge'
 import { SortBar } from './components/SortBar'
 import { NewDropsBadge } from './components/NewDropsBadge'
 import { FilterDrawer } from './components/FilterDrawer'
+import { ChangelogModal } from './components/ChangelogModal'
+import { APP_VERSION } from './content/changelog'
 import { useDropFeed } from './hooks/useDropFeed'
 
 const isDev = import.meta.env.DEV
 
 function App() {
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [changelogOpen, setChangelogOpen] = useState(false)
   const {
     drops,
     filtered,
@@ -191,8 +194,20 @@ function App() {
               aRuzas
             </span>
           </p>
+          <button
+            type="button"
+            onClick={() => setChangelogOpen(true)}
+            className="mt-6 inline-flex items-center gap-1.5 rounded-full border border-panel-border bg-panel/80 px-3 py-1 text-xs text-slate-500 transition hover:border-accent-gold/40 hover:text-accent-gold"
+            title="Sürüm notlarını aç"
+          >
+            <span className="font-mono font-medium">v{APP_VERSION}</span>
+            <span className="text-slate-600">·</span>
+            <span>güncellemeler</span>
+          </button>
         </div>
       </footer>
+
+      <ChangelogModal open={changelogOpen} onClose={() => setChangelogOpen(false)} />
 
       <Toaster
         position="top-right"
